@@ -64,6 +64,7 @@ impl Stream {
             .load::<Stream>(conn)
             .unwrap()
     }
+ 
     pub fn get_all_with_receiver(pubkey: &String, conn: &PgConnection) -> Vec<Stream> {
         use crate::schema::streams::dsl::*;
         streams
@@ -71,6 +72,7 @@ impl Stream {
             .load::<Stream>(conn)
             .unwrap()
     }
+
     fn id_is_present(id: &String, conn: &PgConnection) -> bool {
         use crate::schema::streams::dsl::*;
         match streams.find(id).first::<Stream>(conn) {
