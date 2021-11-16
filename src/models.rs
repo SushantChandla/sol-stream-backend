@@ -64,7 +64,7 @@ impl Stream {
             .load::<Stream>(conn)
             .unwrap()
     }
- 
+
     pub fn get_all_with_receiver(pubkey: &String, conn: &PgConnection) -> Vec<Stream> {
         use crate::schema::streams::dsl::*;
         streams
@@ -82,11 +82,6 @@ impl Stream {
     }
     pub fn insert_or_update(stream: Stream, conn: &PgConnection) -> bool {
         if Stream::id_is_present(&stream.pda_account, conn) {
-            diesel::insert_into(crate::schema::streams::table)
-                .values(&stream)
-                .execute(conn)
-                .is_ok()
-        } else {
             use crate::schema::streams::dsl::{
                 amount_second as a_s, end_time as e_t, lamports_withdrawn as l_w,
                 pda_account as p_a, receiver as r, sender as s, streams, total_amount as t_a,
@@ -102,6 +97,11 @@ impl Stream {
                     t_a.eq(stream.total_amount),
                     e_t.eq(stream.end_time),
                 ))
+                .execute(conn)
+                .is_ok()
+        } else {
+            diesel::insert_into(crate::schema::streams::table)
+                .values(&stream)
                 .execute(conn)
                 .is_ok()
         }

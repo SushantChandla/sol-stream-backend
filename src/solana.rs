@@ -5,8 +5,8 @@ use solana_sdk::{account::Account, pubkey::Pubkey};
 
 use crate::{establish_connection, models::Stream};
 
-pub fn get_all_program_accounts() -> Vec<(Pubkey, Account)> {
-    let program_pub_key = Pubkey::from_str("GjKoA8DkLns8uwL7XuR53QgFvYGeR7R4AZk9L43yENbp")
+fn get_all_program_accounts() -> Vec<(Pubkey, Account)> {
+    let program_pub_key = Pubkey::from_str("DcGPfiGbubEKh1EnQ86EdMvitjhrUo8fGSgvqtFG4A9t")
         .expect("program address invalid");
     let url = "https://api.devnet.solana.com".to_string();
     let client = RpcClient::new(url);
@@ -18,24 +18,49 @@ pub fn get_all_program_accounts() -> Vec<(Pubkey, Account)> {
 
 pub fn subscribe_to_program() {
     let url = "ws://api.devnet.solana.com".to_string();
-    let program_pub_key = Pubkey::from_str("GjKoA8DkLns8uwL7XuR53QgFvYGeR7R4AZk9L43yENbp")
+    let program_pub_key = Pubkey::from_str("DcGPfiGbubEKh1EnQ86EdMvitjhrUo8fGSgvqtFG4A9t")
         .expect("program address invalid");
-    let mut subscription =
-        pubsub_client::PubsubClient::program_subscribe(&url, &program_pub_key, None)
-            .expect("Something went wrong");
 
-    thread::spawn(move || {
+    thread::spawn(move || loop {
+        let subscription =
+            pubsub_client::PubsubClient::program_subscribe(&url, &program_pub_key, None)
+                .expect("Something went wrong");
+
         let conn = establish_connection();
-        for socket_data in subscription.1.iter() {
-            let pda_pubkey = socket_data.value.pubkey;
-            let pda_account: Account = socket_data.value.account.decode().unwrap();
-            let stream = Stream::new(pda_pubkey, &pda_account.data);
-            match stream {
-                Some(a) => Stream::insert_or_update(a, &conn),
-                _ => continue,
-            };
+
+        loop {
+            let response = subscription.1.recv();
+            match response {
+                Ok(response) => {
+                    let pda_pubkey = response.value.pubkey;
+                    let pda_account: Account = response.value.account.decode().unwrap();
+
+                    let stream = Stream::new(pda_pubkey, &pda_account.data);
+                    match stream {
+                        Some(a) => Stream::insert_or_update(a, &conn),
+                        _ => {
+                            println!("data didn't parsed");
+                            continue;
+                        }
+                    };
+                }
+                Err(_) => {
+                    break;
+                }
+            }
         }
-        subscription.0.shutdown().expect("Something went wrong");
-        subscribe_to_program();
+        get_accounts_and_update()
     });
+}
+
+pub fn get_accounts_and_update() {
+    let program_accounts = get_all_program_accounts();
+    let conn = establish_connection();
+    for item in program_accounts.iter() {
+        let stream = Stream::new(item.0.to_string(), &item.1.data);
+        match stream {
+            Some(a) => Stream::insert_or_update(a, &conn),
+            _ => continue,
+        };
+    }
 }

@@ -6,12 +6,11 @@ mod routes;
 mod schema;
 mod solana;
 use rocket::routes;
-use solana::get_all_program_accounts;
 use solana::subscribe_to_program;
 
-use crate::models::Stream;
 use crate::routes::get_all_stream;
 use crate::routes::index;
+use crate::solana::get_accounts_and_update;
 
 use diesel::prelude::*;
 use dotenv::dotenv;
@@ -26,16 +25,8 @@ pub fn establish_connection() -> PgConnection {
 
 #[rocket::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let program_accounts = get_all_program_accounts();
-    let conn = establish_connection();
-    for item in program_accounts.iter() {
-        let stream = Stream::new(item.0.to_string(), &item.1.data);
-        match stream {
-            Some(a) => Stream::insert_or_update(a, &conn),
-            _ => continue,
-        };
-    }
-
+    get_accounts_and_update();
+    
     subscribe_to_program();
 
     let cors = rocket_cors::CorsOptions::default().to_cors()?;
