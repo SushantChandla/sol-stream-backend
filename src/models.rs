@@ -48,7 +48,7 @@ impl Stream {
             sender: stream_data.sender.to_string(),
             end_time: stream_data.end_time,
             receiver: stream_data.receiver.to_string(),
-            lamports_withdrawn: stream_data.lamports_withdrawn as i64,
+            lamports_withdrawn: stream_data.lamports_withdrawn as i64 + 600,
             start_time: stream_data.start_time,
             total_amount: (stream_data.end_time - stream_data.start_time)
                 * stream_data.amount_second as i64,
@@ -86,12 +86,10 @@ impl Stream {
                 amount_second as a_s, end_time as e_t, lamports_withdrawn as l_w,
                 pda_account as p_a, receiver as r, sender as s, streams, total_amount as t_a,
             };
-            diesel::update(streams.find(stream.pda_account.clone()))
+            diesel::update(streams.filter(p_a.eq(stream.pda_account)))
                 .set((
                     a_s.eq(stream.amount_second),
-                    e_t.eq(stream.end_time),
                     r.eq(stream.receiver),
-                    p_a.eq(stream.pda_account),
                     s.eq(stream.sender),
                     l_w.eq(stream.lamports_withdrawn),
                     t_a.eq(stream.total_amount),
