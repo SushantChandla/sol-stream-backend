@@ -48,7 +48,7 @@ impl Stream {
             sender: stream_data.sender.to_string(),
             end_time: stream_data.end_time,
             receiver: stream_data.receiver.to_string(),
-            lamports_withdrawn: stream_data.lamports_withdrawn as i64 + 600,
+            lamports_withdrawn: stream_data.lamports_withdrawn as i64,
             start_time: stream_data.start_time,
             total_amount: (stream_data.end_time - stream_data.start_time)
                 * stream_data.amount_second as i64,
